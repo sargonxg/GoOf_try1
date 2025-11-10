@@ -1,0 +1,5 @@
+{
+  "name": "UN Document Analyst",
+  "description": "An AI-powered chat application that answers questions based on uploaded UN documents, citing its sources.",
+  "requestFramePermissions": []
+}
