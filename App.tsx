@@ -1,11 +1,10 @@
-
 import React, { useState, useCallback } from 'react';
 import Header from './components/Header';
 import DocumentsManager from './components/DocumentsManager';
 import ChatWindow from './components/ChatWindow';
 import { AppView, Document } from './types';
 import { useChat } from './hooks/useChat';
-import { getSummary, getDocumentDescription } from './services/geminiService';
+import { getSummary, getDocumentDescription, extractDocumentMetadata } from './services/geminiService';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.DOCUMENTS);
@@ -18,7 +17,7 @@ const App: React.FC = () => {
       const existingDocNames = new Set(prevDocs.map(d => d.name));
       const uniqueNewDocs = newDocs
         .filter(d => !existingDocNames.has(d.name))
-        .map(d => ({ ...d, description: '...' })); // '...' indicates loading
+        .map(d => ({ ...d, description: '...', title: '...', date: '...' }));
 
       if (prevDocs.length + uniqueNewDocs.length > 50) {
         alert(`You can only upload up to 50 documents. Please remove some before adding more.`);
@@ -28,6 +27,7 @@ const App: React.FC = () => {
       const allDocs = [...prevDocs, ...uniqueNewDocs];
 
       uniqueNewDocs.forEach(doc => {
+        // Fetch description
         getDocumentDescription(doc.content)
           .then(description => {
             setDocuments(currentDocs => currentDocs.map(d =>
@@ -37,6 +37,19 @@ const App: React.FC = () => {
           .catch(() => {
             setDocuments(currentDocs => currentDocs.map(d =>
               d.id === doc.id ? { ...d, description: "Failed to load description." } : d
+            ));
+          });
+        
+        // Fetch metadata (title and date)
+        extractDocumentMetadata(doc.content)
+          .then(metadata => {
+             setDocuments(currentDocs => currentDocs.map(d =>
+              d.id === doc.id ? { ...d, title: metadata.title, date: metadata.date } : d
+            ));
+          })
+          .catch(() => {
+            setDocuments(currentDocs => currentDocs.map(d =>
+              d.id === doc.id ? { ...d, title: "Failed to load title.", date: "N/A" } : d
             ));
           });
       });

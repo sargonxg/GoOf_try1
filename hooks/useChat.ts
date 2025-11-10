@@ -1,7 +1,6 @@
-
 import { useState, useCallback } from 'react';
 import { Message, Document } from '../types';
-import { getChatResponse } from '../services/geminiService';
+import { findRelevantDocuments, extractKeyPointsFromDocument, synthesizeFinalAnswer } from '../services/geminiService';
 
 export const useChat = (documents: Document[]) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -30,16 +29,68 @@ export const useChat = (documents: Document[]) => {
         setMessages(prev => [...prev, botMessage]);
         return;
       }
+      
+      // --- Step 1: Retrieval ---
+      const relevantDocuments = await findRelevantDocuments(text, documents);
 
-      const response = await getChatResponse(text, documents);
+      if (relevantDocuments.length === 0) {
+        const botMessage: Message = {
+            id: 'bot-' + Date.now(),
+            sender: 'bot',
+            text: "I couldn't find any documents relevant to your question. Please try rephrasing your question or check the uploaded documents.",
+        };
+        setMessages(prev => [...prev, botMessage]);
+        return;
+      }
+      
+      // --- Step 2: Show "thinking" message ---
+      const thinkingMessage: Message = {
+        id: 'thinking-' + Date.now(),
+        sender: 'bot',
+        text: `Found ${relevantDocuments.length} relevant document(s). Extracting key points...`,
+        isThinking: true,
+      };
+      setMessages(prev => [...prev, thinkingMessage]);
+
+      // --- Step 3: Map (Extract key points from each document in parallel) ---
+      const pointExtractionPromises = relevantDocuments.map(doc => 
+          extractKeyPointsFromDocument(text, doc)
+      );
+      const keyPointsData = await Promise.all(pointExtractionPromises);
+      
+      const validKeyPoints = keyPointsData.filter(p => p.extractedPoints.trim());
+
+      if (validKeyPoints.length === 0) {
+        const botMessage: Message = {
+            id: 'bot-' + Date.now(),
+            sender: 'bot',
+            text: `I scanned ${relevantDocuments.length} document(s) but could not find specific information to answer your question.`,
+            sources: relevantDocuments.map(d => d.name)
+        };
+        setMessages(prev => {
+          const filteredMessages = prev.filter(m => !m.isThinking);
+          return [...filteredMessages, botMessage];
+        });
+        return;
+      }
+      
+      setMessages(prev => prev.map(m => m.isThinking ? {...m, text: `Synthesizing answer from ${validKeyPoints.length} source(s)...`} : m));
+
+      // --- Step 4: Reduce (Synthesize a final answer from the key points) ---
+      const response = await synthesizeFinalAnswer(text, validKeyPoints);
       
       const botMessage: Message = {
         id: 'bot-' + Date.now(),
         sender: 'bot',
         text: response.answer,
-        sources: response.sources
+        sources: response.sources,
       };
-      setMessages(prev => [...prev, botMessage]);
+
+      // --- Step 5: Replace thinking message with the final answer ---
+      setMessages(prev => {
+        const filteredMessages = prev.filter(m => !m.isThinking);
+        return [...filteredMessages, botMessage];
+      });
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -48,11 +99,14 @@ export const useChat = (documents: Document[]) => {
         text: 'Sorry, something went wrong. Please try again.',
         sender: 'bot',
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => {
+        const filteredMessages = prev.filter(m => !m.isThinking);
+        return [...filteredMessages, errorMessage];
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [documents]);
+  }, [documents, setMessages]);
 
   return { messages, sendMessage, isLoading, setMessages };
 };

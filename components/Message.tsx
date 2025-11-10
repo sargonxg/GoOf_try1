@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Message as MessageType } from '../types';
 import SourceIcon from './icons/SourceIcon';
@@ -25,6 +24,17 @@ interface MessageProps {
 const Message: React.FC<MessageProps> = ({ message }) => {
   const isBot = message.sender === 'bot';
   const htmlContent = marked.parse(message.text, { renderer }) as string;
+
+  if (message.isThinking) {
+    return (
+       <div className="flex justify-center">
+            <div
+                className="text-sm italic text-gray-500 dark:text-gray-400 py-2 px-4"
+                dangerouslySetInnerHTML={{ __html: htmlContent }}
+            />
+       </div>
+    );
+  }
 
   if (isBot && message.isSummary && message.summaryData) {
     return (

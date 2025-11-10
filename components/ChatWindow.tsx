@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Message as MessageType, Document } from '../types';
 import Message from './Message';
@@ -24,14 +23,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onSendMessage, isLoad
        {messages.length === 0 ? (
          <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400">
            <DocumentIcon className="h-16 w-16 mb-4 text-gray-400" />
-           <h2 className="text-2xl font-semibold mb-2">How the Chat Works</h2>
-           <p className="max-w-lg">
-             <strong>1. Upload Files:</strong> Go to the 'Documents' tab to upload the files you want to analyze.
-             <br/>
-             <strong>2. Ask Questions:</strong> Return here to ask questions. The AI will answer based *only* on the information in your documents.
-             <br/>
-             <strong>3. See Sources:</strong> Every answer from the AI will include the name(s) of the source document(s) used.
-           </p>
+           <h2 className="text-2xl font-semibold mb-2">Advanced Document Analysis</h2>
+            <div className="max-w-2xl text-left space-y-2">
+               <p>This chat uses a multi-step process to provide the most accurate answers from your documents:</p>
+               <ol className="list-decimal list-inside bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                 <li><strong>Find:</strong> When you ask a question, the AI first finds all potentially relevant documents from your uploads (up to 30).</li>
+                 <li><strong>Extract:</strong> It then reads through each of those documents to extract only the key points and facts related to your specific question.</li>
+                 <li><strong>Synthesize:</strong> Finally, it combines these extracted points into a single, comprehensive answer, with inline citations pointing to the exact source document, title, and date.</li>
+               </ol>
+            </div>
            <p className="mt-4 font-semibold">
              You currently have {documents.length} document{documents.length !== 1 ? 's' : ''} uploaded.
            </p>

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, ChangeEvent } from 'react';
 import { Document } from '../types';
 import UploadIcon from './icons/UploadIcon';
@@ -31,7 +30,7 @@ const DocumentsManager: React.FC<DocumentsManagerProps> = ({
   const [parsingStatus, setParsingStatus] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const parseFile = (file: File): Promise<Omit<Document, 'description'>> => {
+  const parseFile = (file: File): Promise<Omit<Document, 'description' | 'title' | 'date'>> => {
     return new Promise((resolve, reject) => {
       setParsingStatus(prev => ({ ...prev, [file.name]: 'pending' }));
       if (file.type === 'application/pdf') {
@@ -87,7 +86,7 @@ const DocumentsManager: React.FC<DocumentsManagerProps> = ({
         return;
     }
 
-    const newDocuments: Omit<Document, 'description'>[] = [];
+    const newDocuments: Omit<Document, 'description' | 'title' | 'date'>[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
@@ -114,9 +113,9 @@ const DocumentsManager: React.FC<DocumentsManagerProps> = ({
     <div className="max-w-4xl mx-auto p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Manage Documents</h2>
       <p className="text-gray-600 dark:text-gray-400 mb-6">
-        <b>Step 1:</b> Upload up to 50 PDF or TXT files to create a knowledge base. An AI-generated description will appear for each file.
+        <b>Step 1:</b> Upload up to 50 PDF or TXT files. The AI will automatically extract a title, date, and detailed description for each file to enable accurate searching.
         <br />
-        <b>Step 2:</b> Once you've uploaded your files, go to the <b>Chat</b> tab to ask questions about them.
+        <b>Step 2:</b> Once your files are processed, go to the <b>Chat</b> tab to ask questions.
       </p>
 
       <div className="mb-6">
@@ -149,18 +148,24 @@ const DocumentsManager: React.FC<DocumentsManagerProps> = ({
           <ul className="divide-y divide-gray-200 dark:divide-gray-700 border-t border-b border-gray-200 dark:border-gray-700">
             {documents.map(doc => (
               <li key={doc.id} className="flex items-start justify-between py-4">
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-4 flex-1 overflow-hidden">
                   <DocumentIcon className="h-6 w-6 text-blue-500 flex-shrink-0 mt-1" />
-                  <div>
-                    <span className="font-medium text-gray-800 dark:text-gray-200">{doc.name}</span>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                        {doc.description === '...' ? 'Generating description...' : doc.description}
+                  <div className="flex-1 overflow-hidden">
+                    <p className="font-medium text-gray-800 dark:text-gray-200 truncate" title={doc.name}>{doc.name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 truncate" title={doc.title}>
+                        <strong>Title:</strong> {doc.title === '...' ? 'Extracting...' : doc.title}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        <strong>Date:</strong> {doc.date === '...' ? 'Extracting...' : doc.date}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-1">
+                        <strong>Description:</strong> {doc.description === '...' ? 'Generating...' : doc.description}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => removeDocument(doc.id)}
-                  className="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="ml-4 p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
                   aria-label={`Remove ${doc.name}`}
                 >
                   <TrashIcon className="h-5 w-5" />

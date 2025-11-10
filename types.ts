@@ -1,9 +1,10 @@
-
 export interface Document {
   id: string;
   name: string;
   content: string;
   description?: string;
+  title?: string;
+  date?: string;
 }
 
 export interface SummaryData {
@@ -19,6 +20,7 @@ export interface Message {
   sources?: string[];
   isSummary?: boolean;
   summaryData?: SummaryData;
+  isThinking?: boolean;
 }
 
 export enum AppView {
