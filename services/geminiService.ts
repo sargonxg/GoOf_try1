@@ -96,6 +96,7 @@ export const extractKeyPointsFromDocument = async (query: string, document: Docu
             systemInstruction,
             temperature: 0.0,
             maxOutputTokens: 1000,
+            thinkingConfig: { thinkingBudget: 200 },
         }
     });
     
